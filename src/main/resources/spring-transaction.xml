@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:task="http://www.springframework.org/schema/task" 
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans  
+                        http://www.springframework.org/schema/beans/spring-beans-4.0.xsd  
+                        http://www.springframework.org/schema/context  
+                        http://www.springframework.org/schema/context/spring-context-4.0.xsd  
+                        http://www.springframework.org/schema/tx
+    					http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+ 						http://www.springframework.org/schema/aop 
+ 						http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+                        http://www.springframework.org/schema/mvc  
+                        http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd ">
+	<!--<context:component-scan base-package="com.icaopan" />-->
+
+	<context:property-placeholder location="transaction.properties"/>
+
+	<!--配置c3p0-->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${jdbc.driver}"/>
+		<property name="jdbcUrl" value="${jdbc.url}"/>
+		<property name="user" value="${jdbc.username}"/>
+		<property name="password" value="${jdbc.password}"/>
+
+	</bean>
+
+	<!--配置业务层类-->
+	<bean id="accountService" class="xyz.qsme.service.serviceImpl.AccountServiceImpl">
+		<property name="accountDao" ref="accountDao"/>
+	</bean>
+
+	<!--配置DAO类-->
+	<bean id="accountDao" class="xyz.qsme.dao.AccountDaoImpl">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+
+
+
+	<!--事务管理器配置-->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+
+	<!--配置业务层的代理-->
+	<bean id="accountProxyService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+		<!--配置代理增强的目标对象-->
+		<property name="target" ref="accountService"/>
+		<!--注入事务管理器-->
+		<property name="transactionManager" ref="transactionManager"/>
+		<!--注入事务属性-->
+		<property name="transactionAttributes">
+			<props>
+				<!--
+				prop的格式:
+					PROPAGATION :事务的传播属性
+					ISOLATION    :事务的隔离级别
+					readOnly     : 只读（不可以发生修改，插入，删除等操作）
+					-Exception   :发生哪些异常回滚事务
+					+Exception   :发生哪些异常不回滚
+				-->
+				<prop key="transfer">PROPAGATION_REQUIRED,+java.lang.ArithmeticException</prop>
+			</props>
+		</property>
+	</bean>
+</beans>
